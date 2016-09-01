@@ -3,13 +3,15 @@
 
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Microsoft.EntityFrameworkCore.Migrations.Operations
 {
-    public class AlterTableOperation : MigrationOperation
+    public class AlterTableOperation : MigrationOperation, IAlterMigrationOperation
     {
         public virtual string Name { get; [param: NotNull] set; }
         public virtual string Schema { get; [param: CanBeNull] set; }
         public virtual Annotatable OldTable { get; [param: NotNull] set; } = new Annotatable();
+        IMutableAnnotatable IAlterMigrationOperation.OldAnnotations => OldTable;
     }
 }

@@ -150,6 +150,7 @@
     <Compile Include="Migrations\Operations\AlterDatabaseOperation.cs" />
     <Compile Include="Migrations\Operations\AlterSequenceOperation.cs" />
     <Compile Include="Migrations\Operations\AlterTableOperation.cs" />
+    <Compile Include="Migrations\Operations\Builders\AlterOperationBuilder.cs" />
     <Compile Include="Migrations\Operations\Builders\ColumnsBuilder.cs" />
     <Compile Include="Migrations\Operations\Builders\CreateTableBuilder.cs" />
     <Compile Include="Migrations\Operations\Builders\OperationBuilder.cs" />
@@ -166,6 +167,7 @@
     <Compile Include="Migrations\Operations\DropTableOperation.cs" />
     <Compile Include="Migrations\Operations\DropUniqueConstraintOperation.cs" />
     <Compile Include="Migrations\Operations\EnsureSchemaOperation.cs" />
+    <Compile Include="Migrations\Operations\IAlterMigrationOperation.cs" />
     <Compile Include="Migrations\Operations\MigrationOperation.cs" />
     <Compile Include="Migrations\Operations\RenameColumnOperation.cs" />
     <Compile Include="Migrations\Operations\RenameIndexOperation.cs" />
