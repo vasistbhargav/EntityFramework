@@ -200,4 +200,50 @@ namespace Microsoft.EntityFrameworkCore.Metadata
         /// <returns> The property that was removed. </returns>
         IMutableProperty RemoveProperty([NotNull] string name);
     }
+
+    /// <summary>
+    ///     <para>
+    ///         Represents an entity in an <see cref="IMutableModel" />.
+    ///     </para>
+    ///     <para>
+    ///         This interface is used during model creation and allows the metadata to be modified.
+    ///         Once the model is built, <see cref="IComplexType" /> represents a ready-only view of the same metadata.
+    ///     </para>
+    /// </summary>
+    public interface IMutableComplexType : IComplexType, IMutableAnnotatable
+    {
+        /// <summary>
+        ///     Gets the model this type belongs to.
+        /// </summary>
+        new IMutableModel Model { get; }
+
+        /// <summary>
+        ///     Adds a property to this type.
+        /// </summary>
+        /// <param name="name"> The name of the property to add. </param>
+        /// <param name="propertyType"> The type of value the property will hold. </param>
+        /// <param name="shadow"> Whether the property is in shadow-state. </param>
+        /// <returns> The newly created property. </returns>
+        IMutableComplexProperty AddProperty([NotNull] string name, [NotNull] Type propertyType, bool shadow);
+
+        /// <summary>
+        ///         Gets the property with a given name. Returns null if no property with the given name is defined.
+        /// </summary>
+        /// <param name="name"> The name of the property. </param>
+        /// <returns> The property, or null if none is found. </returns>
+        new IMutableComplexProperty FindProperty([NotNull] string name);
+
+        /// <summary>
+        ///         Gets the properties defined on this type.
+        /// </summary>
+        /// <returns> The properties defined on this type. </returns>
+        new IEnumerable<IMutableComplexProperty> GetProperties();
+
+        /// <summary>
+        ///     Removes a property from this type.
+        /// </summary>
+        /// <param name="name"> The name of the property to remove. </param>
+        /// <returns> The property that was removed. </returns>
+        IMutableComplexProperty RemoveProperty([NotNull] string name);
+    }
 }

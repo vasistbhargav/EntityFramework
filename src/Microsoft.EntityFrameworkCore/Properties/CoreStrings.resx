@@ -412,7 +412,7 @@
     <value>A key cannot be configured on '{derivedType}' because it is a derived type. The key must be configured on the root type '{rootType}'. If you did not intend for '{rootType}' to be included in the model, ensure that it is not included in a DbSet property on your context, referenced in a configuration call to ModelBuilder, or referenced from a navigation property on a type that is included in the model.</value>
   </data>
   <data name="CircularInheritance" xml:space="preserve">
-    <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{baseEntityType}' is a descendent of '{entityType}'.</value>
+    <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{baseEntityType}' is a descendent of '{type}'.</value>
   </data>
   <data name="DerivedEntityCannotHaveKeys" xml:space="preserve">
     <value>Unable to set a base type for entity type '{entityType}' because it has one or more keys defined.</value>
@@ -472,10 +472,10 @@
     <value>The entity type related to '{entityType}' cannot be determined because the specified foreign key {foreignKey} references entity type '{principalEntityType}' that it is in the same hierarchy as the entity type that it is declared on '{dependentEntityType}'.</value>
   </data>
   <data name="NonClrBaseType" xml:space="preserve">
-    <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{baseEntityType}' is a shadow state entity type while '{entityType}' is not.</value>
+    <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{baseEntityType}' is a shadow state entity type while '{type}' is not.</value>
   </data>
   <data name="NonShadowBaseType" xml:space="preserve">
-    <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{entityType}' is a shadow state entity type while '{baseEntityType}' is not.</value>
+    <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{type}' is a shadow state entity type while '{baseEntityType}' is not.</value>
   </data>
   <data name="NotAssignableClrBaseType" xml:space="preserve">
     <value>The entity type '{entityType}' cannot inherit from '{baseEntityType}' because '{clrType}' is not a descendent of '{baseClrType}'.</value>
@@ -616,7 +616,7 @@
     <value>Sequence contains no elements</value>
   </data>
   <data name="NoParameterlessConstructor" xml:space="preserve">
-    <value>A parameterless constructor was not found on entity type '{entityType}'. In order to create an instance of '{entityType}' EF requires that a parameterless constructor be declared.</value>
+    <value>A parameterless constructor was not found on entity type '{entityType}'. In order to create an instance of '{type}' EF requires that a parameterless constructor be declared.</value>
   </data>
   <data name="LogIgnoredInclude" xml:space="preserve">
     <value>The Include operation for navigation: '{navigation}' was ignored because the target navigation is not reachable in the final query results.</value>

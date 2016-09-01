@@ -6,6 +6,17 @@ using Microsoft.EntityFrameworkCore.ValueGeneration;
 namespace Microsoft.EntityFrameworkCore.Metadata
 {
     /// <summary>
+    /// 
+    /// </summary>
+    public interface IMutableComplexProperty : IComplexProperty, IMutableAnnotatable
+    {
+        /// <summary>
+        ///     Gets the type that this property belongs to.
+        /// </summary>
+        new IMutableComplexType DeclaringComplexType { get; }
+    }
+
+    /// <summary>
     ///     <para>
     ///         Represents a scalar property of an entity.
     ///     </para>

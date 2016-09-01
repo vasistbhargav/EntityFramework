@@ -9,36 +9,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 namespace Microsoft.EntityFrameworkCore.Metadata
 {
     /// <summary>
-    ///     Represents an entity in an <see cref="IModel" />.
+    ///     Represents an entity type in an <see cref="IModel" />.
     /// </summary>
-    public interface IEntityType : IAnnotatable
+    public interface IEntityType : IStructuralType
     {
-        /// <summary>
-        ///     Gets the model this entity belongs to.
-        /// </summary>
-        IModel Model { get; }
-
-        /// <summary>
-        ///     Gets the name of the entity.
-        /// </summary>
-        string Name { get; }
-
         /// <summary>
         ///     Gets the base type of the entity. Returns null if this is not a derived type in an inheritance hierarchy.
         /// </summary>
         IEntityType BaseType { get; }
-
-        /// <summary>
-        ///     <para>
-        ///         Gets the CLR class that is used to represent instances of this entity. Returns null if the entity does not have a
-        ///         corresponding CLR class (known as a shadow entity).
-        ///     </para>
-        ///     <para>
-        ///         Shadow entities are not currently supported in a model that is used at runtime with a <see cref="DbContext" />.
-        ///         Therefore, shadow entities will only exist in migration model snapshots, etc.
-        ///     </para>
-        /// </summary>
-        Type ClrType { get; }
 
         /// <summary>
         ///     <para>
@@ -101,6 +79,53 @@ namespace Microsoft.EntityFrameworkCore.Metadata
         /// </summary>
         /// <returns> The indexes defined on this entity. </returns>
         IEnumerable<IIndex> GetIndexes();
+    }
+
+    /// <summary>
+    ///     Represents a type without identity in an <see cref="IModel" />.
+    /// </summary>
+    public interface IComplexType : IStructuralType
+    {
+        /// <summary>
+        ///         Gets the property with a given name. Returns null if no property with the given name is defined.
+        /// </summary>
+        /// <param name="name"> The name of the property. </param>
+        /// <returns> The property, or null if none is found. </returns>
+        new IComplexProperty FindProperty([NotNull] string name);
+
+        /// <summary>
+        ///         Gets the properties defined on this type.
+        /// </summary>
+        /// <returns> The properties defined on this type. </returns>
+        new IEnumerable<IComplexProperty> GetProperties();
+    }
+
+    /// <summary>
+    ///     Represents a type in an <see cref="IModel" />.
+    /// </summary>
+    public interface IStructuralType : IAnnotatable
+    {
+        /// <summary>
+        ///     Gets the model this type belongs to.
+        /// </summary>
+        IModel Model { get; }
+
+        /// <summary>
+        ///     Gets the name of the type.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
+        ///     <para>
+        ///         Gets the CLR class that is used to represent instances of this type. Returns null if the type does not have a
+        ///         corresponding CLR class (known as a shadow type).
+        ///     </para>
+        ///     <para>
+        ///         Shadow types are not currently supported in a model that is used at runtime with a <see cref="DbContext" />.
+        ///         Therefore, shadow types will only exist in migration model snapshots, etc.
+        ///     </para>
+        /// </summary>
+        Type ClrType { get; }
 
         /// <summary>
         ///     <para>
@@ -117,14 +142,14 @@ namespace Microsoft.EntityFrameworkCore.Metadata
 
         /// <summary>
         ///     <para>
-        ///         Gets the properties defined on this entity.
+        ///         Gets the properties defined on this type.
         ///     </para>
         ///     <para>
         ///         This API only returns scalar properties and does not return navigation properties. Use
         ///         <see cref="EntityTypeExtensions.GetNavigations(IEntityType)" /> to get navigation properties.
         ///     </para>
         /// </summary>
-        /// <returns> The properties defined on this entity. </returns>
+        /// <returns> The properties defined on this type. </returns>
         IEnumerable<IProperty> GetProperties();
     }
 }

@@ -8,6 +8,17 @@ using Microsoft.EntityFrameworkCore.ValueGeneration;
 namespace Microsoft.EntityFrameworkCore.Metadata
 {
     /// <summary>
+    ///     Represents a property of a complex type.
+    /// </summary>
+    public interface IComplexProperty : IProperty
+    {
+        /// <summary>
+        ///     Gets the type that this property is decalred in.
+        /// </summary>
+        IComplexType DeclaringComplexType { get; }
+    }
+
+    /// <summary>
     ///     Represents a scalar property of an entity.
     /// </summary>
     public interface IProperty : IPropertyBase

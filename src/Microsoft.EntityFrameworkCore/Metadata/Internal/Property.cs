@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
@@ -541,5 +540,56 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         /// </summary>
         public virtual DebugView<Property> DebugView
             => new DebugView<Property>(this, m => m.ToDebugString(false));
+    }
+
+    /// <summary>
+    ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+    ///     directly from your code. This API may change or be removed in future releases.
+    /// </summary>
+    public class ComplexProperty : Property, IMutableComplexProperty
+    {
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public ComplexProperty(
+            [NotNull] string name,
+            [NotNull] Type clrType,
+            [NotNull] IMutableComplexType declaringComplexType,
+            [CanBeNull] EntityType declaringEntityType,
+            ConfigurationSource configurationSource)
+            : base(name, clrType, declaringEntityType, configurationSource)
+        {
+            Check.NotNull(clrType, nameof(clrType));
+            Check.NotNull(declaringComplexType, nameof(declaringComplexType));
+
+            DeclaringComplexType = declaringComplexType;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public ComplexProperty(
+            [NotNull] PropertyInfo propertyInfo,
+            [NotNull] IMutableComplexType declaringComplexType,
+            [NotNull] EntityType declaringEntityType,
+            ConfigurationSource configurationSource)
+            : base(propertyInfo, declaringEntityType, configurationSource)
+        {
+            Check.NotNull(declaringEntityType, nameof(declaringEntityType));
+
+            DeclaringComplexType = declaringComplexType;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public virtual IMutableComplexType DeclaringComplexType { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        IComplexType IComplexProperty.DeclaringComplexType => DeclaringComplexType;
     }
 }

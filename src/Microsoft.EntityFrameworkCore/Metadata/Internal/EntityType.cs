@@ -18,6 +18,404 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
     ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
     ///     directly from your code. This API may change or be removed in future releases.
     /// </summary>
+    public class ComplexType : ConventionalAnnotatable, IMutableComplexType
+    {
+        private readonly SortedDictionary<string, ComplexProperty> _properties
+            = new SortedDictionary<string, ComplexProperty>(StringComparer.Ordinal);
+
+        private readonly object _typeOrName;
+
+        private ConfigurationSource _configurationSource;
+
+        private readonly Dictionary<string, ConfigurationSource> _ignoredMembers
+            = new Dictionary<string, ConfigurationSource>();
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public ComplexType([NotNull] string name, [NotNull] Model model, ConfigurationSource configurationSource)
+            : this(model, configurationSource)
+        {
+            Check.NotEmpty(name, nameof(name));
+            Check.NotNull(model, nameof(model));
+
+            _typeOrName = name;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public ComplexType([NotNull] Type clrType, [NotNull] Model model, ConfigurationSource configurationSource)
+            : this(model, configurationSource)
+        {
+            Check.ValidEntityType(clrType, nameof(clrType));
+            Check.NotNull(model, nameof(model));
+
+            _typeOrName = clrType;
+        }
+
+        private ComplexType([NotNull] Model model, ConfigurationSource configurationSource)
+        {
+            Model = model;
+            _configurationSource = configurationSource;
+            //Builder = new InternalEntityTypeBuilder(this, model.Builder);
+        }
+
+        ///// <summary>
+        /////     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        /////     directly from your code. This API may change or be removed in future releases.
+        ///// </summary>
+        //public virtual InternalEntityTypeBuilder Builder { [DebuggerStepThrough] get; [DebuggerStepThrough] [param: CanBeNull] set; }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual Type ClrType => _typeOrName as Type;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual Model Model { get; }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual string Name
+            => ClrType != null ? ClrType.DisplayName() : (string)_typeOrName;
+
+        ///// <summary>
+        /////     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        /////     directly from your code. This API may change or be removed in future releases.
+        ///// </summary>
+        //public override string ToString() => this.ToDebugString();
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ConfigurationSource GetConfigurationSource() => _configurationSource;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual void UpdateConfigurationSource(ConfigurationSource configurationSource)
+            => _configurationSource = _configurationSource.Max(configurationSource);
+
+        #region Properties
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty AddProperty(
+            [NotNull] string name,
+            [CanBeNull] Type propertyType = null,
+            bool? shadow = null,
+            // ReSharper disable once MethodOverloadWithOptionalParameter
+            ConfigurationSource configurationSource = ConfigurationSource.Explicit,
+            bool runConventions = true)
+        {
+            Check.NotNull(name, nameof(name));
+
+            ValidateCanAddProperty(name);
+
+            if (shadow != true)
+            {
+                var clrProperty = ClrType?.GetPropertiesInHierarchy(name).FirstOrDefault();
+                if (clrProperty != null)
+                {
+                    if (propertyType != null
+                        && propertyType != clrProperty.PropertyType)
+                    {
+                        throw new InvalidOperationException(CoreStrings.PropertyWrongClrType(
+                            name,
+                            this.DisplayName(),
+                            clrProperty.PropertyType.ShortDisplayName(),
+                            propertyType.ShortDisplayName()));
+                    }
+
+                    return AddProperty(clrProperty, configurationSource, runConventions);
+                }
+
+                if (shadow == false)
+                {
+                    if (ClrType == null)
+                    {
+                        throw new InvalidOperationException(CoreStrings.ClrPropertyOnShadowEntity(name, this.DisplayName()));
+                    }
+
+                    throw new InvalidOperationException(CoreStrings.NoClrProperty(name, this.DisplayName()));
+                }
+            }
+
+            if (propertyType == null)
+            {
+                throw new InvalidOperationException(CoreStrings.NoPropertyType(name, this.DisplayName()));
+            }
+            return AddProperty(new Property(name, propertyType, this, configurationSource), runConventions);
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty AddProperty(
+            [NotNull] PropertyInfo propertyInfo,
+            // ReSharper disable once MethodOverloadWithOptionalParameter
+            ConfigurationSource configurationSource = ConfigurationSource.Explicit,
+            bool runConventions = true)
+        {
+            Check.NotNull(propertyInfo, nameof(propertyInfo));
+
+            ValidateCanAddProperty(propertyInfo.Name);
+
+            if (ClrType == null)
+            {
+                throw new InvalidOperationException(CoreStrings.ClrPropertyOnShadowEntity(propertyInfo.Name, this.DisplayName()));
+            }
+
+            if (propertyInfo.DeclaringType == null
+                || !propertyInfo.DeclaringType.GetTypeInfo().IsAssignableFrom(ClrType.GetTypeInfo()))
+            {
+                throw new ArgumentException(CoreStrings.PropertyWrongEntityClrType(
+                    propertyInfo.Name, this.DisplayName(), propertyInfo.DeclaringType?.ShortDisplayName()));
+            }
+
+            return AddProperty(new Property(propertyInfo, this, configurationSource), runConventions);
+        }
+
+        private void ValidateCanAddProperty(string name)
+        {
+            //var duplicateProperty = FindPropertiesInHierarchy(name).FirstOrDefault();
+            //if (duplicateProperty != null)
+            //{
+            //    throw new InvalidOperationException(CoreStrings.DuplicateProperty(
+            //        name, this.DisplayName(), duplicateProperty.DeclaringEntityType.DisplayName()));
+            //}
+
+            //var duplicateNavigation = FindNavigationsInHierarchy(name).FirstOrDefault();
+            //if (duplicateNavigation != null)
+            //{
+            //    throw new InvalidOperationException(CoreStrings.ConflictingNavigation(name, this.DisplayName(),
+            //        duplicateNavigation.DeclaringEntityType.DisplayName()));
+            //}
+        }
+
+        private ComplexProperty AddProperty(ComplexProperty property, bool runConventions)
+        {
+            _properties.Add(property.Name, property);
+
+            PropertyMetadataChanged();
+
+            //if (runConventions)
+            //{
+            //    property = Model.ConventionDispatcher.OnPropertyAdded(property.Builder)?.Metadata;
+            //}
+
+            return property;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty GetOrAddProperty([NotNull] PropertyInfo propertyInfo)
+            => FindProperty(propertyInfo) ?? AddProperty(propertyInfo);
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty GetOrAddProperty([NotNull] string name, [NotNull] Type propertyType, bool shadow)
+            => FindProperty(name) ?? AddProperty(name, propertyType, shadow);
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty FindProperty([NotNull] PropertyInfo propertyInfo)
+            => FindProperty(propertyInfo.Name);
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty FindProperty([NotNull] string name)
+        {
+            Check.NotEmpty(name, nameof(name));
+
+            ComplexProperty property;
+            return _properties.TryGetValue(name, out property)
+                ? property
+                : null;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ComplexProperty RemoveProperty([NotNull] string name)
+        {
+            Check.NotEmpty(name, nameof(name));
+
+            var property = FindProperty(name);
+            return property == null
+                ? null
+                : RemoveProperty(property);
+        }
+
+        private ComplexProperty RemoveProperty(ComplexProperty property)
+        {
+            CheckPropertyNotInUse(property);
+
+            _properties.Remove(property.Name);
+            property.Builder = null;
+
+            PropertyMetadataChanged();
+
+            return property;
+        }
+
+        private void CheckPropertyNotInUse(ComplexProperty property)
+        {
+            //CheckPropertyNotInUse(property, this);
+
+            //foreach (var entityType in GetDerivedTypes())
+            //{
+            //    CheckPropertyNotInUse(property, entityType);
+            //}
+        }
+
+        //private void CheckPropertyNotInUse(ComplexProperty property, EntityType entityType)
+        //{
+        //    if (entityType.GetDeclaredKeys().Any(k => k.Properties.Contains(property))
+        //        || entityType.GetDeclaredForeignKeys().Any(k => k.Properties.Contains(property))
+        //        || entityType.GetDeclaredIndexes().Any(i => i.Properties.Contains(property)))
+        //    {
+        //        throw new InvalidOperationException(CoreStrings.PropertyInUse(property.Name, this.DisplayName()));
+        //    }
+        //}
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual IEnumerable<ComplexProperty> GetProperties()
+            => _properties.Values;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual void PropertyMetadataChanged()
+        {
+            foreach (var indexedProperty in GetProperties())
+            {
+                indexedProperty.PropertyIndexes = null;
+            }
+        }
+
+        #endregion
+
+        #region Ignore
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual void Ignore([NotNull] string name, ConfigurationSource configurationSource = ConfigurationSource.Explicit,
+            bool runConventions = true)
+        {
+            Check.NotNull(name, nameof(name));
+
+            ConfigurationSource existingIgnoredConfigurationSource;
+            if (_ignoredMembers.TryGetValue(name, out existingIgnoredConfigurationSource))
+            {
+                configurationSource = configurationSource.Max(existingIgnoredConfigurationSource);
+            }
+
+            _ignoredMembers[name] = configurationSource;
+
+            //if (runConventions)
+            //{
+            //    Model.ConventionDispatcher.OnEntityTypeMemberIgnored(Builder, name);
+            //}
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual IReadOnlyList<string> GetIgnoredMembers()
+            => _ignoredMembers.Keys.ToList();
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ConfigurationSource? FindDeclaredIgnoredMemberConfigurationSource([NotNull] string name)
+        {
+            ConfigurationSource ignoredConfigurationSource;
+            return _ignoredMembers.TryGetValue(name, out ignoredConfigurationSource) 
+                ? (ConfigurationSource?)ignoredConfigurationSource 
+                : null;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual ConfigurationSource? FindIgnoredMemberConfigurationSource([NotNull] string name) 
+            => FindDeclaredIgnoredMemberConfigurationSource(name);
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual void Unignore([NotNull] string name) 
+            => _ignoredMembers.Remove(name);
+
+        #endregion
+
+        #region Explicit interface implementations
+
+        IModel IStructuralType.Model => Model;
+        IMutableModel IMutableComplexType.Model => Model;
+        Type IStructuralType.ClrType => ClrType;
+
+        IMutableComplexProperty IMutableComplexType.AddProperty(string name, Type propertyType, bool shadow) => AddProperty(name, propertyType, shadow);
+        IProperty IStructuralType.FindProperty(string name) => FindProperty(name);
+        IComplexProperty IComplexType.FindProperty(string name) => FindProperty(name);
+        IMutableComplexProperty IMutableComplexType.FindProperty(string name) => FindProperty(name);
+        IEnumerable<IProperty> IStructuralType.GetProperties() => GetProperties();
+        IEnumerable<IComplexProperty> IComplexType.GetProperties() => GetProperties();
+        IEnumerable<IMutableComplexProperty> IMutableComplexType.GetProperties() => GetProperties();
+        IMutableComplexProperty IMutableComplexType.RemoveProperty(string name) => RemoveProperty(name);
+
+        #endregion
+
+        private static IEnumerable<T> ToEnumerable<T>(T element)
+            where T : class
+            => element == null ? Enumerable.Empty<T>() : new[] { element };
+
+        ///// <summary>
+        /////     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        /////     directly from your code. This API may change or be removed in future releases.
+        ///// </summary>
+        //public virtual DebugView<ComplexType> DebugView
+        //    => new DebugView<ComplexType>(this, m => m.ToDebugString(false));
+    }
+
+    /// <summary>
+    ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+    ///     directly from your code. This API may change or be removed in future releases.
+    /// </summary>
     public class EntityType : ConventionalAnnotatable, IMutableEntityType
     {
         private readonly SortedSet<ForeignKey> _foreignKeys
@@ -1736,9 +2134,9 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
 
         #region Explicit interface implementations
 
-        IModel IEntityType.Model => Model;
+        IModel IStructuralType.Model => Model;
         IMutableModel IMutableEntityType.Model => Model;
-        Type IEntityType.ClrType => ClrType;
+        Type IStructuralType.ClrType => ClrType;
         IEntityType IEntityType.BaseType => _baseType;
 
         IMutableEntityType IMutableEntityType.BaseType
@@ -1792,9 +2190,9 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             => RemoveIndex(properties);
 
         IMutableProperty IMutableEntityType.AddProperty(string name, Type propertyType, bool shadow) => AddProperty(name, propertyType, shadow);
-        IProperty IEntityType.FindProperty(string name) => FindProperty(name);
+        IProperty IStructuralType.FindProperty(string name) => FindProperty(name);
         IMutableProperty IMutableEntityType.FindProperty(string name) => FindProperty(name);
-        IEnumerable<IProperty> IEntityType.GetProperties() => GetProperties();
+        IEnumerable<IProperty> IStructuralType.GetProperties() => GetProperties();
         IEnumerable<IMutableProperty> IMutableEntityType.GetProperties() => GetProperties();
         IMutableProperty IMutableEntityType.RemoveProperty(string name) => RemoveProperty(name);
 
